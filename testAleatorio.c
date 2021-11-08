@@ -3,50 +3,36 @@
 #include <time.h>
 #include <sys/time.h>
 #include "ABB.c"
-#include "AVL.c"
-#include "Btree.c"
+//#include "abbGFG.c"
+#include "avl.c"
+//#include "avlGFG.c"
+#include "Btree16.c"
+#include "Btree256.c"
+#include "Btree4096.c"
 #include "splayTree.c"
 
-#define n 100000
+#define n 1000000
 int operations[n];
-int operations_size = (sizeof(operations)/sizeof(*operations)) - 1;
+int operations_size = (sizeof(operations)/sizeof(*operations));
 unsigned int max_32bits = 4294967295;
 
-unsigned int nodes_for_operations[n]; // arreglo con los valores que tendrán los nodos con los que se harán las distintas operaciones
-int index_operations = 0; // indice para iterar sobre la lista de nodos para las operaciones
 unsigned int inserted_numbers[n]; // arreglo con los valores ya insertados en el árbol
-
+int tree_size = 0; // Siempre se parte del árbol vacío con una inserción (Enunciado)
+unsigned int nodes_for_operations[n]; // arreglo con los valores que tendrán los nodos con los que se harán las distintas operaciones
+int index_nodes = 0; // indice para iterar sobre la lista de nodos para las operaciones
 unsigned int random_uint; // valor aleatorio para los nodos de los árboles
-int tree_size = 1; // Siempre se parte del árbol vacío con una inserción (Enunciado)
 
 // Función para obtener tiempos de CPU (user time)
 double get_cpu_time(){
     return (double)clock() / CLOCKS_PER_SEC;
 }
 
-// Búsqueda secuencial sobre un arreglo (se usa para verificar que un elemento no está ya insertado en el árbol)
-int linear_search(unsigned int array[], unsigned int x, int size) {
-    for(int i=0;i<size;i++) {
-        if (array[i] == x) return 1;
-    }
-    return 0;
-}
-
 // Función que retorna un unsigned int aleatorio asegurando que no está insertado en el árbol
-unsigned int random_not_inserted(unsigned int array[], unsigned int max_value, int size) {
+unsigned int random_not_inserted(AVLNode** root, unsigned int max_value) {
     unsigned int random_uint;
     do {
-        random_uint  = rand() % max_value;
-    } while(linear_search(array, random_uint, size));
-    return random_uint;
-}
-
-// Función que retorna un unsigned int aleatorio asegurando que no está insertado en el árbol
-unsigned int random_not_inserted1(ABBNode* root, unsigned int max_value) {
-    unsigned int random_uint;
-    do {
-        random_uint  = rand() % max_value;
-    } while(ABB_find(&root, random_uint)!=NULL);
+        random_uint = rand() % max_value;
+    } while(AVL_find(root, random_uint)!=NULL);
     return random_uint;
 }
 
@@ -55,14 +41,19 @@ unsigned int random_not_inserted1(ABBNode* root, unsigned int max_value) {
 // pbe = 1/3 -> 2/6   Si sale 4 5 corresponde a una operación pbe
 // pbi = 1/6 -> 1/6   Si sale 6 corresponde a una operación pbi
 void experiment_setup() {
-    printf("Generando numeros aleatorios que representan a las operaciones... \n");
-    for(int i=0;i<operations_size;i++){ // generando numeros aleatorios que representan a las operaciones
-        operations[i] = (rand() % 6) + 1;
-    }
-    printf("Numeros generados! \n");
+    int intentos = 0;
     int cantidad_pi = 0;
     int cantidad_pbe = 0;
     int cantidad_pbi = 0;
+    printf("Generando numeros aleatorios que representan a las operaciones... \n");
+    do {
+        for(int i=0;i<operations_size;i++){ // generando numeros aleatorios que representan a las operaciones
+            operations[i] = (rand() % 6) + 1;
+        }
+        intentos++;
+        printf("Intentos para generar la secuencia: %d\n", intentos);
+    } while(operations[0]>=4); // Cumplir que la primera operación sea una inserción
+    printf("Numeros generados! \n");
     printf("calculando la cantidad de operaciones generadas para pi, pbe y pbi \n");
     for(int i = 0;i<operations_size;i++){ // calculando la cantidad de operaciones generadas para pi, pbe y pbi
         if (operations[i]<=3){
@@ -84,43 +75,44 @@ void experiment_setup() {
 
     printf("Precomputando valores aleatorios para realizar las futuras operaciones de inserción/búsqueda... \n");
     double precomputar_time = get_cpu_time();
+    AVLNode* setup_tree = NULL;
     for(int i = 0;i<operations_size;i++){ // iterar sobre las operaciones una vez para precomputar valores aleatorios de inserción/búsqueda
         //printf("%d \n", i);
         if (operations[i]<=3){ // VERIFICADO QUE SIEMPRE AÑADE UNO QUE NO ESTÁ (en ambos arreglos)-> 50249
             // la operación es un pi (inserción)
-            random_uint = random_not_inserted(inserted_numbers, max_32bits, tree_size); // buscar un número aleatorio no insertado
+            random_uint = random_not_inserted(&setup_tree, max_32bits); // buscar un número aleatorio no insertado
+            AVL_insert(&setup_tree, random_uint);
             inserted_numbers[tree_size] = random_uint;
             tree_size++;
-            nodes_for_operations[index_operations] = random_uint;
-            index_operations++;
+            nodes_for_operations[index_nodes] = random_uint;
+            index_nodes++;
         }
         else if (operations[i]<= 5){ // VERIFICADO QUE SACA UN NÚMERO DE LA LISTA YA INSERTADO (en ambos arreglos) -> 33289
             // la operación es un pbe (búsqueda exitosa)
             int indice_random = rand() % tree_size; // indice aleatorio entre 0 y el tamaño del árbol -> NO ESTA INSERTADO AÚN EL 0
             random_uint = inserted_numbers[indice_random]; // acceder a la lista de números ya insertados y obtener el valor en ese indice
-            nodes_for_operations[index_operations] = random_uint;
-            index_operations++;
+            nodes_for_operations[index_nodes] = random_uint;
+            index_nodes++;
         }
         else{ // VERIFICADO QUE SIEMPRE SACA UNO QUE NO ESTÁ (en ambos arreglos) -> 16461
             // la operación es un pbi (búsqueda infructuosa)
             // buscar si el candidato para realizar la búsqueda infructuosa está ya insertado, si lo está -> buscar otro candidato
-            random_uint = random_not_inserted(inserted_numbers, max_32bits, tree_size);
-            nodes_for_operations[index_operations] = random_uint;
-            index_operations++;
+            random_uint = random_not_inserted(&setup_tree, max_32bits);
+            nodes_for_operations[index_nodes] = random_uint;
+            index_nodes++;
         }
     }
+    //AVL_preorder(&setup_tree);
     printf("El tiempo de precomputo para el experimento aleatorio es: %lf \n", get_cpu_time()-precomputar_time);
 }
 
 double aleatorioABB(){
     // Esquema de operaciones -> 1) Aleatoria:
     printf("\n--------------Experimento aleatorio para ABB-------------------------\n");
-    // Inicializar ABB y realizar una primera inserción
+    
+    // Inicializar ABB
     ABBNode* random_ABB = NULL;
-    unsigned int first_insert = rand() % max_32bits;
-    ABB_insert(&random_ABB, first_insert);
-    inserted_numbers[0] = first_insert;
-   
+    //struct nodexd* random_ABB = NULL;
     int contar_caca = 0;
     int contar_caca_fructifera = 0;
 
@@ -130,21 +122,44 @@ double aleatorioABB(){
         random_uint = nodes_for_operations[i];
         if (operations[i]<=3){ // VERIFICADO QUE SIEMPRE INSERTA EN EL ÁRBOL UNO QUE NO ESTÁ -> 50249
             ABB_insert(&random_ABB, random_uint);
+            //random_ABB = insertxd(random_ABB, random_uint);
+            /*
+            //printf("\narbol antes de la insercion: ");
+            //ABB_preorder(&random_ABB);
+            //printf("\nsize antes de la insercion ");
+            //printf("%d\n", ABBsize(&random_ABB));
+
+            printf("\ninsertando el: %d\n", random_uint);
+            ABB_insert(&random_ABB, random_uint);
+
+            printf("\narbol despues de la insercion: ");
+            ABB_preorder(&random_ABB);
+            //printf("\nsize despues de la insercion ");
+            //printf("%d", ABBsize(&random_ABB));
+            printf("\n---------------------------------------");
+            */
         }
-        else if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
-            // la operación es un pbe (búsqueda exitosa)
+        else {
             ABBNode* tABBNode = ABB_find(&random_ABB, random_uint);
-            if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                contar_caca_fructifera++;
-        }
-        else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
-            // la operación es un pbi (búsqueda infructuosa)
-            // se eligió uno que no estaba insertado, lo buscamos
-            if(ABB_find(&random_ABB, random_uint)==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
-                contar_caca++;
+            //struct nodexd* tABBNode = searchxd(random_ABB, random_uint);
+            if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
+                // la operación es un pbe (búsqueda exitosa)
+                if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    contar_caca_fructifera++;
+                //else if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+            }
+            else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
+                // la operación es un pbi (búsqueda infructuosa)
+                // se eligió uno que no estaba insertado, lo buscamos
+                if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    contar_caca++;
+                //else if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+            }
         }
     }
-    
+    //ABB_preorder(&random_ABB);
     printf("tamaño del ABB (cantidad de inserciones): %d \n", tree_size);
     printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
     printf("búsquedas infructuosas: %d \n",contar_caca);
@@ -156,12 +171,10 @@ double aleatorioABB(){
 double aleatorioAVL(){
     // Esquema de operaciones -> 1) Aleatoria:
     printf("\n--------------Experimento aleatorio para AVL-------------------------\n");
-    // Inicializar AVL y realizar una primera inserción
+    
+    // Inicializar AVL
     AVLNode* random_AVL = NULL;
-    unsigned int first_insert = rand() % max_32bits;
-    AVL_insert(&random_AVL, first_insert);
-    inserted_numbers[0] = first_insert;
-   
+    //struct Node* random_AVL = NULL;
     int contar_caca = 0;
     int contar_caca_fructifera = 0;
 
@@ -171,21 +184,44 @@ double aleatorioAVL(){
         random_uint = nodes_for_operations[i];
         if (operations[i]<=3){
             AVL_insert(&random_AVL, random_uint);
+            //random_AVL = insert(random_AVL, random_uint);
+            /*
+            //printf("\narbol antes de la insercion: ");
+            //AVL_preorder(&random_AVL);
+            //printf("\nsize antes de la insercion ");
+            //printf("%d\n", AVLsize(&random_AVL));
+
+            printf("\ninsertando el: %d\n", random_uint);
+            AVL_insert(&random_AVL, random_uint);
+
+            printf("\narbol despues de la insercion: ");
+            AVL_preorder(&random_AVL);
+            //printf("\nsize despues de la insercion ");
+            //printf("%d", AVLsize(&random_AVL));
+            printf("\n---------------------------------------");
+            */
         }
-        else if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD
-            // la operación es un pbe (búsqueda exitosa)
+        else {
             AVLNode* tAVLNode = AVL_find(&random_AVL, random_uint);
-            if(tAVLNode!=NULL && tAVLNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                contar_caca_fructifera++;
-        }
-        else{
-            // la operación es un pbi (búsqueda infructuosa)
-            // se eligió uno que no estaba insertado, lo buscamos
-            if(AVL_find(&random_AVL, random_uint)==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
-                contar_caca++;
+            //struct Node* tAVLNode = AVL_GFG_find(&random_AVL, random_uint);
+            if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
+                // la operación es un pbe (búsqueda exitosa)
+                if(tAVLNode!=NULL && tAVLNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    contar_caca_fructifera++;
+                //else if(tAVLNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+            }
+            else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
+                // la operación es un pbi (búsqueda infructuosa)
+                // se eligió uno que no estaba insertado, lo buscamos
+                if(tAVLNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    contar_caca++;
+                //else if(tAVLNode!=NULL && tAVLNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+            }
         }
     }
-
+    //AVL_preorder(&random_AVL);
     printf("tamaño del AVL (cantidad de inserciones): %d \n", tree_size);
     printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
     printf("búsquedas infructuosas: %d \n",contar_caca);
@@ -197,12 +233,9 @@ double aleatorioAVL(){
 double aleatorio_splayTree(){
     // Esquema de operaciones -> 1) Aleatoria:
     printf("\n--------------Experimento aleatorio para splayTree-------------------------\n");
-    // Inicializar splayTree y realizar una primera inserción
+    
+    // Inicializar splayTree
     splayNode* random_splayTree = NULL;
-    unsigned int first_insert = rand() % max_32bits;
-    splay_insert(&random_splayTree, first_insert);
-    inserted_numbers[0] = first_insert;
-   
     int contar_caca = 0;
     int contar_caca_fructifera = 0;
 
@@ -212,24 +245,245 @@ double aleatorio_splayTree(){
         random_uint = nodes_for_operations[i];
         if (operations[i]<=3){ // HAY UN PROBLEMA CON LAS INSERCIONES, NO SE ESTÁN HACIENDO BIEN
             splay_insert(&random_splayTree, random_uint);
-            //splay_preorder(&random_splayTree);
-            //printf("Termina el splayTree\n");
-        }
-        else if (operations[i]<=5){
-            // la operación es un pbe (búsqueda exitosa)
-            if(splay_find(&random_splayTree, random_uint)->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                contar_caca_fructifera++;
+            /*
+            printf("\narbol antes de la insercion: ");
+            splay_preorder(&random_splayTree);
+            printf("\nsize antes de la insercion ");
+            printf("%d\n", splay_size(&random_splayTree));
+
+            printf("\ninsertando el: %d\n", random_uint);
+            splay_insert(&random_splayTree, random_uint);
+
+            printf("\narbol despues de la insercion: ");
+            splay_preorder(&random_splayTree);
+            printf("\nsize despues de la insercion ");
+            printf("%d", splay_size(&random_splayTree));
+            printf("\n---------------------------------------");
+            */
         }
         else{
-            // la operación es un pbi (búsqueda infructuosa)
-            // se eligió uno que no estaba insertado, lo buscamos
-            if(splay_find(&random_splayTree, random_uint)->value!=random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
-                contar_caca++;
+            splayNode* tsplayNode = splay_find(&random_splayTree, random_uint);
+            if (operations[i]<=5){// NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
+                // la operación es un pbe (búsqueda exitosa)
+                if(tsplayNode->value==random_uint)
+                    contar_caca_fructifera++;
+                //else if(tsplayNode->value!=random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca_fructifera++;
+
+                /* VERSION ANTIGUA, NO DEBERIAMOS CHEQUEAR SI ES NULL YA QUE SIEMPRE HAY UNA INSERCION PRIMERO, POR ESO SE ACTUALIZÓ
+                if(tsplayNode!=NULL && tsplayNode->value==random_uint)
+                    contar_caca_fructifera++;
+                else if(tsplayNode==NULL || tsplayNode->value!=random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    contar_caca++;
+                */
+            }
+            else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
+                // la operación es un pbi (búsqueda infructuosa)
+                // se eligió uno que no estaba insertado, lo buscamos
+                if(tsplayNode->value!=random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    contar_caca++;
+                //else if(tsplayNode->value==random_uint)
+                    //contar_caca_fructifera++;
+
+                /* VERSION ANTIGUA, NO DEBERIAMOS CHEQUEAR SI ES NULL YA QUE SIEMPRE HAY UNA INSERCION PRIMERO, POR ESO SE ACTUALIZÓ
+                if(tsplayNode==NULL || tsplayNode->value!=random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    contar_caca++;
+                else if(tsplayNode!=NULL && tsplayNode->value==random_uint)
+                    contar_caca_fructifera++;
+                */
+            }
         }
     }
+    //splay_preorder(&random_splayTree);
     printf("tamaño del splayTree (cantidad de inserciones): %d \n", tree_size);
     printf("búsquedas exitosas: %d \n", contar_caca_fructifera);
     printf("búsquedas infructuosas: %d \n", contar_caca);
+    printf("felicidades! aprobó todos los test \n");
+
+    return get_cpu_time()-start_time;
+}
+
+double aleatorioBtree16(){
+    // Esquema de operaciones -> 1) Aleatoria:
+    printf("\n--------------Experimento aleatorio para Btree16-------------------------\n");
+    
+    // Inicializar ABB
+    Btree16Node* random_ABB = NULL;
+    //struct nodexd* random_ABB = NULL;
+    int contar_caca = 0;
+    int contar_caca_fructifera = 0;
+
+    // Inicio de operaciones
+    double start_time = get_cpu_time();
+    for(int i = 0;i<operations_size;i++){ // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
+        random_uint = nodes_for_operations[i];
+        if (operations[i]<=3){ // VERIFICADO QUE SIEMPRE INSERTA EN EL ÁRBOL UNO QUE NO ESTÁ -> 50249
+            BTree16_insert(&random_ABB, random_uint);
+            //random_ABB = insertxd(random_ABB, random_uint);
+            /*
+            //printf("\narbol antes de la insercion: ");
+            //ABB_preorder(&random_ABB);
+            //printf("\nsize antes de la insercion ");
+            //printf("%d\n", ABBsize(&random_ABB));
+
+            printf("\ninsertando el: %d\n", random_uint);
+            ABB_insert(&random_ABB, random_uint);
+
+            printf("\narbol despues de la insercion: ");
+            ABB_preorder(&random_ABB);
+            //printf("\nsize despues de la insercion ");
+            //printf("%d", ABBsize(&random_ABB));
+            printf("\n---------------------------------------");
+            */
+        }
+        else {
+            Btree16Node* tABBNode = BTree16_find(&random_ABB, random_uint);
+            //struct nodexd* tABBNode = searchxd(random_ABB, random_uint);
+            if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
+                // la operación es un pbe (búsqueda exitosa)
+                //if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+                //else if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+            }
+            else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
+                // la operación es un pbi (búsqueda infructuosa)
+                // se eligió uno que no estaba insertado, lo buscamos
+                //if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+                //else if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+            }
+        }
+    }
+    //ABB_preorder(&random_ABB);
+    printf("tamaño del Btree16 (cantidad de inserciones): %d \n", tree_size);
+    printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
+    printf("búsquedas infructuosas: %d \n",contar_caca);
+    printf("felicidades! aprobó todos los test \n");
+
+    return get_cpu_time()-start_time;
+}
+
+double aleatorioBtree256(){
+    // Esquema de operaciones -> 1) Aleatoria:
+    printf("\n--------------Experimento aleatorio para Btree256-------------------------\n");
+    
+    // Inicializar ABB
+    Btree256Node* random_ABB = NULL;
+    //struct nodexd* random_ABB = NULL;
+    int contar_caca = 0;
+    int contar_caca_fructifera = 0;
+
+    // Inicio de operaciones
+    double start_time = get_cpu_time();
+    for(int i = 0;i<operations_size;i++){ // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
+        random_uint = nodes_for_operations[i];
+        if (operations[i]<=3){ // VERIFICADO QUE SIEMPRE INSERTA EN EL ÁRBOL UNO QUE NO ESTÁ -> 50249
+            BTree256_insert(&random_ABB, random_uint);
+            //random_ABB = insertxd(random_ABB, random_uint);
+            /*
+            //printf("\narbol antes de la insercion: ");
+            //ABB_preorder(&random_ABB);
+            //printf("\nsize antes de la insercion ");
+            //printf("%d\n", ABBsize(&random_ABB));
+
+            printf("\ninsertando el: %d\n", random_uint);
+            ABB_insert(&random_ABB, random_uint);
+
+            printf("\narbol despues de la insercion: ");
+            ABB_preorder(&random_ABB);
+            //printf("\nsize despues de la insercion ");
+            //printf("%d", ABBsize(&random_ABB));
+            printf("\n---------------------------------------");
+            */
+        }
+        else {
+            Btree256Node* tABBNode = BTree256_find(&random_ABB, random_uint);
+            //struct nodexd* tABBNode = searchxd(random_ABB, random_uint);
+            if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
+                // la operación es un pbe (búsqueda exitosa)
+                //if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+                //else if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+            }
+            else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
+                // la operación es un pbi (búsqueda infructuosa)
+                // se eligió uno que no estaba insertado, lo buscamos
+                //if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+                //else if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+            }
+        }
+    }
+    //ABB_preorder(&random_ABB);
+    printf("tamaño del Btree256 (cantidad de inserciones): %d \n", tree_size);
+    printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
+    printf("búsquedas infructuosas: %d \n",contar_caca);
+    printf("felicidades! aprobó todos los test \n");
+
+    return get_cpu_time()-start_time;
+}
+
+double aleatorioBtree4096(){
+    // Esquema de operaciones -> 1) Aleatoria:
+    printf("\n--------------Experimento aleatorio para Btree4096-------------------------\n");
+    
+    // Inicializar ABB
+    Btree4096Node* random_ABB = NULL;
+    //struct nodexd* random_ABB = NULL;
+    int contar_caca = 0;
+    int contar_caca_fructifera = 0;
+
+    // Inicio de operaciones
+    double start_time = get_cpu_time();
+    for(int i = 0;i<operations_size;i++){ // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
+        random_uint = nodes_for_operations[i];
+        if (operations[i]<=3){ // VERIFICADO QUE SIEMPRE INSERTA EN EL ÁRBOL UNO QUE NO ESTÁ -> 50249
+            BTree4096_insert(&random_ABB, random_uint);
+            //random_ABB = insertxd(random_ABB, random_uint);
+            /*
+            //printf("\narbol antes de la insercion: ");
+            //ABB_preorder(&random_ABB);
+            //printf("\nsize antes de la insercion ");
+            //printf("%d\n", ABBsize(&random_ABB));
+
+            printf("\ninsertando el: %d\n", random_uint);
+            ABB_insert(&random_ABB, random_uint);
+
+            printf("\narbol despues de la insercion: ");
+            ABB_preorder(&random_ABB);
+            //printf("\nsize despues de la insercion ");
+            //printf("%d", ABBsize(&random_ABB));
+            printf("\n---------------------------------------");
+            */
+        }
+        else {
+            Btree4096Node* tABBNode = BTree4096_find(&random_ABB, random_uint);
+            //struct nodexd* tABBNode = searchxd(random_ABB, random_uint);
+            if (operations[i]<= 5){ // NO SE PQ SIEMPRE FALLA EN 6 BÚSQUEDAS XDDDDDDDDD -> 33289 - 6 = -> 33283
+                // la operación es un pbe (búsqueda exitosa)
+                //if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+                //else if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+            }
+            else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
+                // la operación es un pbi (búsqueda infructuosa)
+                // se eligió uno que no estaba insertado, lo buscamos
+                //if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
+                //else if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
+            }
+        }
+    }
+    //ABB_preorder(&random_ABB);
+    printf("tamaño del Btree4096 (cantidad de inserciones): %d \n", tree_size);
+    printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
+    printf("búsquedas infructuosas: %d \n",contar_caca);
     printf("felicidades! aprobó todos los test \n");
 
     return get_cpu_time()-start_time;
@@ -246,15 +500,15 @@ int main() {
 
     double exp_aleatorio_splayTree = aleatorio_splayTree();
     printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el splayTree es: %lf \n", exp_aleatorio_splayTree);
-    
-    /*
-    double factor1 = 0.1;
-    double factor2 = 0.5;
-    double exp_creciente_factor1 = creciente(factor1);
-    printf("El tiempo total ejecución para experimento creciente con factor=%lf es: %lf \n", factor1, exp_creciente_factor1);
-    double exp_creciente_factor2 = creciente(factor2);
-    printf("El tiempo total ejecución para experimento creciente con factor=%lf es: %lf \n", factor2, exp_creciente_factor2);
-    */
 
+    double exp_aleatorioBtree16 = aleatorioBtree16();
+    printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el Btree16 es: %lf \n", exp_aleatorioBtree16);
+
+    double exp_aleatorioBtree256 = aleatorioBtree256();
+    printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el Btree256 es: %lf \n", exp_aleatorioBtree256);
+
+    double exp_aleatoriobtree4096 = aleatorioBtree4096();
+    printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el Btree4096 es: %lf \n", exp_aleatoriobtree4096);
+    
     return 0;
 }

@@ -5,6 +5,7 @@
 // Nodo de un splayTree
 typedef struct splayNode {
     int value;
+    int size;
     struct splayNode* left;
     struct splayNode* right;
 } splayNode;
@@ -15,6 +16,7 @@ splayNode* createSplayNode(int x){
     tsplayNode->value = x;
     tsplayNode->left = NULL;
     tsplayNode->right = NULL;
+    tsplayNode->size=1;
     return tsplayNode;
 }
  
@@ -145,6 +147,17 @@ void splay_insert(splayNode** pnode, unsigned int x){
     normalInsert(pnode, x);
     *pnode = splay_find(pnode, x);
     return;
+}
+
+int splay_size(splayNode** pnode) {
+    splayNode* root = *pnode;
+    int count = 0;
+    if (root != NULL) {
+        count += root->size;
+        count += splay_size(&(root->left));
+        count += splay_size(&(root->right));
+    }
+    return count;
 }
  
 // Funciones para recorrer el splayTree de distintas formas
