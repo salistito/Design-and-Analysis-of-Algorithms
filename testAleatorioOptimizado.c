@@ -7,9 +7,9 @@
 #include "Btree.c"
 #include "splayTree.c"
 
-#define n 1000000
+#define n 100
 int operations[n];
-int operations_size = (sizeof(operations)/sizeof(*operations)) - 1;
+int operations_size = (sizeof(operations)/sizeof(*operations));
 unsigned int max_32bits = 4294967295;
 
 unsigned int inserted_numbers[n]; // arreglo con los valores ya insertados en el árbol
@@ -36,14 +36,11 @@ unsigned int random_not_inserted(AVLNode** root, unsigned int max_value) {
 // pi  = 1/2 -> 3/6   Si sale 1 2 3 corresponde a una operación pi
 // pbe = 1/3 -> 2/6   Si sale 4 5 corresponde a una operación pbe
 // pbi = 1/6 -> 1/6   Si sale 6 corresponde a una operación pbi
-void experiment_setup(double factor) {
+void experiment_setup() {
     int intentos = 0;
     int cantidad_pi = 0;
     int cantidad_pbe = 0;
     int cantidad_pbi = 0;
-
-    int k = factor*tree_size;
-
     printf("Generando numeros aleatorios que representan a las operaciones... \n");
     do {
         for(int i=0;i<operations_size;i++){ // generando numeros aleatorios que representan a las operaciones
@@ -79,19 +76,12 @@ void experiment_setup(double factor) {
         //printf("%d \n", i);
         if (operations[i]<=3){ // VERIFICADO QUE SIEMPRE AÑADE UNO QUE NO ESTÁ (en ambos arreglos)-> 50249
             // la operación es un pi (inserción)
-            if(k>=1) {// rand() % (int)k con k<1 es rand() % 0 (que se indetermina)
-                // buscar un número aleatorio entre 0 y k "piso" + m, que no esté insertado
-                random_uint = random_not_inserted(&setup_tree, max_32bits); // generar elementos al azar entre 0 y k y sumarles m (donde m es el número actual de elementos en el árbol)
-            }
-            else {// k<1 -> número random entre 0 y 0 (es decir, 0) y sumarle m -> 0 + tree_size
-                random_uint = 0 + tree_size;
-            }
+            random_uint = random_not_inserted(&setup_tree, max_32bits); // buscar un número aleatorio no insertado
             AVL_insert(&setup_tree, random_uint);
             inserted_numbers[tree_size] = random_uint;
             tree_size++;
             nodes_for_operations[index_nodes] = random_uint;
             index_nodes++;
-            k=factor*tree_size; // actualizar k
         }
         else if (operations[i]<= 5){ // VERIFICADO QUE SACA UN NÚMERO DE LA LISTA YA INSERTADO (en ambos arreglos) -> 33289
             // la operación es un pbe (búsqueda exitosa)
@@ -112,9 +102,9 @@ void experiment_setup(double factor) {
     printf("El tiempo de precomputo para el experimento aleatorio es: %lf \n", get_cpu_time()-precomputar_time);
 }
 
-double crecienteABB(double factor){
-    // Esquema de operaciones -> 2) Creciente:
-    printf("--------------Experimento creciente con factor=%f para ABB-------------------------\n", factor);
+double aleatorioABB(){
+    // Esquema de operaciones -> 1) Aleatoria:
+    printf("\n--------------Experimento aleatorio para ABB-------------------------\n");
     
     // Inicializar ABB
     ABBNode* random_ABB = NULL;
@@ -134,20 +124,20 @@ double crecienteABB(double factor){
                 // la operación es un pbe (búsqueda exitosa)
                 if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                     contar_caca_fructifera++;
-                else if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
-                    contar_caca++;
+                //else if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
+                    //contar_caca++;
             }
             else{ // SIEMPRE ES UNA BÚSQUEDA INFRUCTUOSA -> 16461
                 // la operación es un pbi (búsqueda infructuosa)
                 // se eligió uno que no estaba insertado, lo buscamos
                 if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
                     contar_caca++;
-                else if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                    contar_caca_fructifera++;
+                //else if(tABBNode!=NULL && tABBNode->value==random_uint) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
+                    //contar_caca_fructifera++;
             }
         }
     }
-    
+    //ABB_preorder(&random_ABB);
     printf("tamaño del ABB (cantidad de inserciones): %d \n", tree_size);
     printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
     printf("búsquedas infructuosas: %d \n",contar_caca);
@@ -156,9 +146,9 @@ double crecienteABB(double factor){
     return get_cpu_time()-start_time;
 }
 
-double crecienteAVL(double factor){
-    // Esquema de operaciones -> 2) Creciente:
-    printf("--------------Experimento creciente con factor=%f para AVL-------------------------\n", factor);
+double aleatorioAVL(){
+    // Esquema de operaciones -> 1) Aleatoria:
+    printf("\n--------------Experimento aleatorio para AVL-------------------------\n");
     
     // Inicializar AVL
     AVLNode* random_AVL = NULL;
@@ -191,7 +181,7 @@ double crecienteAVL(double factor){
             }
         }
     }
-
+    //AVL_preorder(&random_AVL);
     printf("tamaño del AVL (cantidad de inserciones): %d \n", tree_size);
     printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
     printf("búsquedas infructuosas: %d \n",contar_caca);
@@ -200,9 +190,9 @@ double crecienteAVL(double factor){
     return get_cpu_time()-start_time;
 }
 
-double creciente_splayTree(double factor){
-    // Esquema de operaciones -> 2) Creciente:
-    printf("--------------Experimento creciente con factor=%f para splayTree-------------------------\n", factor);
+double aleatorio_splayTree(){
+    // Esquema de operaciones -> 1) Aleatoria:
+    printf("\n--------------Experimento aleatorio para splayTree-------------------------\n");
     
     // Inicializar splayTree
     splayNode* random_splayTree = NULL;
@@ -215,8 +205,8 @@ double creciente_splayTree(double factor){
         random_uint = nodes_for_operations[i];
         if (operations[i]<=3){ // HAY UN PROBLEMA CON LAS INSERCIONES, NO SE ESTÁN HACIENDO BIEN
             splay_insert(&random_splayTree, random_uint);
-            //splay_preorder(&random_splayTree);
-            //printf("Termina el splayTree\n");
+            splay_preorder(&random_splayTree);
+            printf("Termina el splayTree\n");
         }
         else{
             splayNode* tsplayNode = splay_find(&random_splayTree, random_uint);
@@ -237,7 +227,7 @@ double creciente_splayTree(double factor){
             }
         }
     }
-
+    //splay_preorder(&random_splayTree);
     printf("tamaño del splayTree (cantidad de inserciones): %d \n", tree_size);
     printf("búsquedas exitosas: %d \n", contar_caca_fructifera);
     printf("búsquedas infructuosas: %d \n", contar_caca);
@@ -247,15 +237,25 @@ double creciente_splayTree(double factor){
 }
 
 int main() {
+    experiment_setup(); // generar la secuencia precisa de operaciones a realizar y aplicar la misma secuencia a cada una de las variantes de ABBs. 
+    
+    double exp_aleatorioABB = aleatorioABB();
+    printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el ABB es: %lf \n", exp_aleatorioABB);
+
+    double exp_aleatorioAVL = aleatorioAVL();
+    printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el AVL es: %lf \n", exp_aleatorioAVL);
+
+    double exp_aleatorio_splayTree = aleatorio_splayTree();
+    printf("El tiempo de ejecución para las operaciones en el experimento Aleatorio para el splayTree es: %lf \n", exp_aleatorio_splayTree);
+    
+    /*
+    double factor1 = 0.1;
     double factor2 = 0.5;
-    experiment_setup(factor2);
-    
-    double exp_crecienteABB_factor2 = crecienteABB(factor2);
-    printf("El tiempo de ejecución para las operaciones en el experimento Creciente con factor=%lf para el ABB es: %lf \n", factor2, exp_crecienteABB_factor2);
-    double exp_crecienteAVL_factor2 = crecienteAVL(factor2);
-    printf("El tiempo de ejecución para las operaciones en el experimento Creciente con factor=%lf para el AVL es: %lf \n", factor2, exp_crecienteAVL_factor2);
-    double exp_creciente_splayTree_factor2 = creciente_splayTree(factor2);
-    printf("El tiempo de ejecución para las operaciones en el experimento Creciente con factor=%lf para el splayTree es: %lf \n", factor2, exp_creciente_splayTree_factor2);
-    
+    double exp_creciente_factor1 = creciente(factor1);
+    printf("El tiempo total ejecución para experimento creciente con factor=%lf es: %lf \n", factor1, exp_creciente_factor1);
+    double exp_creciente_factor2 = creciente(factor2);
+    printf("El tiempo total ejecución para experimento creciente con factor=%lf es: %lf \n", factor2, exp_creciente_factor2);
+    */
+
     return 0;
 }

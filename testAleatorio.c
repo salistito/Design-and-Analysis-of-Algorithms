@@ -41,6 +41,15 @@ unsigned int random_not_inserted(unsigned int array[], unsigned int max_value, i
     return random_uint;
 }
 
+// Función que retorna un unsigned int aleatorio asegurando que no está insertado en el árbol
+unsigned int random_not_inserted1(ABBNode* root, unsigned int max_value) {
+    unsigned int random_uint;
+    do {
+        random_uint  = rand() % max_value;
+    } while(ABB_find(&root, random_uint)!=NULL);
+    return random_uint;
+}
+
 // Se generarán números aleatorios del 1 al 6
 // pi  = 1/2 -> 3/6   Si sale 1 2 3 corresponde a una operación pi
 // pbe = 1/3 -> 2/6   Si sale 4 5 corresponde a una operación pbe
@@ -203,8 +212,8 @@ double aleatorio_splayTree(){
         random_uint = nodes_for_operations[i];
         if (operations[i]<=3){ // HAY UN PROBLEMA CON LAS INSERCIONES, NO SE ESTÁN HACIENDO BIEN
             splay_insert(&random_splayTree, random_uint);
-            splay_preorder(&random_splayTree);
-            printf("Termina el splayTree\n");
+            //splay_preorder(&random_splayTree);
+            //printf("Termina el splayTree\n");
         }
         else if (operations[i]<=5){
             // la operación es un pbe (búsqueda exitosa)
@@ -225,75 +234,6 @@ double aleatorio_splayTree(){
 
     return get_cpu_time()-start_time;
 }
-/*
-double creciente(double factor){
-    //////////////////////////////////////////////////////////////////////////////////
-    // Esquema de operaciones -> 2) Creciente: #######################################
-    //////////////////////////////////////////////////////////////////////////////////
-
-    printf("--------------Experimento creciente con factor=%f-------------------------\n", factor);
-    // Inicio de operaciones
-    double start_time = get_cpu_time();
-
-    // Inicializar ABB y realizar una primera inserción
-    Node* random_ABB = NULL;
-    int tree_size = 0;
-    double k=factor*tree_size; // k=factor*tree_size (tree_size es 0 al comienzo)
-    unsigned int first_insert = 0;
-    ABB_insert(&random_ABB, first_insert);
-    tree_size++;
-    unsigned int inserted_numbers[n];
-    inserted_numbers[0] = first_insert;
-
-    unsigned int random_uint = 0;
-    int contar_caca = 0;
-    int contar_caca_fructifera = 0;
-
-    for(int i = 0;i<operations_size;i++){ // iterar sobre las operaciones
-        if (operations[i]<=3){
-            // la operación es un pi (inserción)
-            do{
-                if (k>=1){ // rand() % (int)k con k<1 es rand() % 0 (que se indetermina)
-                    random_uint = rand() % (int)k; // número random entre 0 y k "piso"
-                    random_uint += tree_size; // generar elementos al azar entre 0 y k y sumarles m (donde m es el número actual de elementos en el árbol)
-                }
-                else { // k<1 -> número random entre 0 y 0 y sumarle m -> 0 + tree_size
-                    random_uint = tree_size;
-                }
-                
-            } while(linear_search(inserted_numbers, random_uint, tree_size));
-            ABB_insert(&random_ABB, random_uint);
-            inserted_numbers[tree_size] = random_uint;
-            tree_size++;
-            k = factor*tree_size; // actualizar k
-        }
-        else if (operations[i]<= 5){
-            // la operación es un pbe (búsqueda exitosa)
-            int indice_random = rand() % tree_size;
-            random_uint = inserted_numbers[indice_random];
-            if(ABB_find(random_ABB, random_uint)) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                contar_caca_fructifera++;
-        }
-        else{
-            // la operación es un pbi (búsqueda infructuosa)
-            // buscar si el candidato para realizar la búsqueda infructuosa está ya insertado, si lo está -> buscar otro candidato
-            do {
-                random_uint  = rand() % max_32bits;
-            } while(linear_search(inserted_numbers, random_uint, tree_size));
-            // se eligió uno que no estaba insertado, lo buscamos
-            if(ABB_find(random_ABB, random_uint)==0) // DEBUG -> verificar que efectivamente fue una búsqueda infructuosa
-                contar_caca++;
-        }
-    }
-    printf("tamaño del ABB (cantidad de inserciones): %d \n", tree_size);
-    printf("búsquedas exitosas: %d \n",contar_caca_fructifera);
-    printf("búsquedas infructuosas: %d \n",contar_caca);
-    printf("felicidades! aprobó todos los test \n");
-
-    return get_cpu_time()-start_time;
-}
-*/
-
 
 int main() {
     experiment_setup(); // generar la secuencia precisa de operaciones a realizar y aplicar la misma secuencia a cada una de las variantes de ABBs. 

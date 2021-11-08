@@ -31,11 +31,13 @@ void ABB_insert(ABBNode** pnode, unsigned int x){
         ABB_insert(&(node->left), x);
         return;
     }
-    else {// (x > node->value)
+    else if (x > node->value) {
         // Insertar hacia la derecha
         ABB_insert(&(node->right), x);
         return;
     }
+    else //(x == node->value) (ya está insertado)
+        return;
 }
 
 // Función recursiva que busca el nodo con el valor dado dentro del ABB
