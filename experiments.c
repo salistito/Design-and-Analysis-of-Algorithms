@@ -579,6 +579,7 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
 }
 
 int main(){
+    srand(time(0));
     int num_structures = 6; // los experimentos se realizarán sobre 6 estructuras de datos
     int samples = n/interval; // intervalo de medición de tiempos (cada 1000 operaciones)
     unsigned int* experiment_values[num_structures]; // matriz con los distintos valores para los experimentos de cada estructura
