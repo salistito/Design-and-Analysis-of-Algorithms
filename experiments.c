@@ -4,12 +4,13 @@
 #include <math.h>
 #include <string.h>
 #include "ABB.c"
-//#include "abbGFG.c"
-#include "avl.c"
-//#include "avlGFG.c"
-#include "Btree16.c"
-#include "Btree256.c"
-#include "Btree4096.c"
+#include "AVL.c"
+//#include "Btree16.c"
+//#include "Btree256.c"
+//#include "Btree4096.c"
+#include "Btree1.c"
+#include "Btree2.c"
+#include "Btree3.c"
 #include "splayTree.c"
 
 
@@ -33,20 +34,15 @@ unsigned int random_not_inserted(AVLNode** root, unsigned int max_value) {
     } while(AVL_find(root, random_uint)!=NULL);
     return random_uint;
 }
-/*
-// Funciones auxiliares para realizar el experimento con un esquema de operaciones sesgado (Experimento Sesgado):
-double p_x(double x){ // pesos de la formap(x)=x
-    return x;
-}
 
-double p_sqrt(double x){ // pesos de la forma p(x)=sqrt(x)
-    return sqrt(x);
+unsigned int nearest_value(float probabilities_array[], float value, unsigned int size){
+    for (int i=0; i<size;i++) {
+        if (probabilities_array[i] >= value) {
+            return i;
+        }
+    }
+    return -1;
 }
-
-double p_ln(double x){ // pesos de la forma p(x)=ln(x)
-    return log(x);
-}
-*/
 
 /*
 Idea para generar la secuencia de operaciones:
@@ -95,11 +91,19 @@ void generate_random_values(unsigned int** cache) {
     int operations_index = 0; // indice para iterar sobre la lista de valores para las operaciones
     unsigned int random_uint; // unsigned int con un valor aleatorio para los distintos nodos de los árboles
 
+    // Variables para experimentos crecientes
+    double ponderation;
     double factor01 = 0.1;
     double factor05 = 0.5;
-    int k01 = factor01*tree_size;
-    int k05 = factor05*tree_size;
+    double k01 = factor01*tree_size;
+    double k05 = factor05*tree_size;
     unsigned int random_between_0andk = 0; // número aleatorio entre 0 y k
+
+    // Variables para experimentos sesgados
+    float peso_random; // peso aleatorio que se eligirá del arreglo de pesos
+    float P_x = 0; // Sumatoria de p(x)=x -> Probabilad total cuando p(x)=x
+    float P_sqrt = 0; // Sumatoria de p(x)=x -> Probabilad total cuando p(x)=sqrt(x)
+    float P_ln = 0; // Sumatoria de p(x)=x -> Probabilad total cuando p(x)=ln(x)
 
     unsigned int* aleatorio_insertions = (unsigned int*)malloc(sizeof(unsigned int)*n); // arreglo con los valores que se insertarán en los árboles para el experimento aleatorio
     unsigned int* aleatorio_values_for_operations = (unsigned int*)malloc(sizeof(unsigned int)*n); // arreglo con los valores que tendrán los nodos con los que se harán las distintas operaciones
@@ -135,18 +139,38 @@ void generate_random_values(unsigned int** cache) {
             // Experimento Aleatorio
             aleatorio_insertions[tree_size] = random_uint; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores marcados como futuras inserciones
             aleatorio_values_for_operations[operations_index] = random_uint; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores generados para las distintas operaciones
-            
+
             // Experimento Creciente01 k=0.1*m
             // buscar un número aleatorio entre 0 y k "piso" + m, que no esté insertado
-            random_between_0andk = (unsigned int)(random_uint/max_32bits)*k01;
+            ponderation = k01/max_32bits;
+            random_between_0andk = (unsigned int)(random_uint*ponderation);
             creciente01_insertions[tree_size] = random_between_0andk+tree_size; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores marcados como futuras inserciones
             creciente01_values_for_operations[operations_index] = random_between_0andk+tree_size; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores generados para las distintas operaciones
 
             // Experimento Creciente05 k=0.5*m
             // buscar un número aleatorio entre 0 y k "piso" + m, que no esté insertado
-            random_between_0andk = (unsigned int)(random_uint/max_32bits)*k05;
+            ponderation = k05/max_32bits;
+            random_between_0andk = (unsigned int)(random_uint*ponderation);
             creciente05_insertions[tree_size] = random_between_0andk+tree_size; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores marcados como futuras inserciones
             creciente05_values_for_operations[operations_index] = random_between_0andk+tree_size; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores generados para las distintas operaciones
+            
+            // Experimento Sesgado con p(x)=x
+            sesgado_x_insertions[tree_size] = random_uint;
+            sesgado_x_values_for_operations[operations_index] = random_uint;
+            P_x+=random_uint; // El peso del elemento es p(x)=x=random_uint
+            sesgado_x_probabilities[tree_size]=P_x; // Agregar peso al arreglo que contiene los pesos de cada elemento insertado
+
+            // Experimento Sesgado con p(x)=sqrt(x)
+            sesgado_sqrt_insertions[tree_size] = random_uint;
+            sesgado_sqrt_values_for_operations[operations_index] = random_uint;
+            P_sqrt+=sqrt(random_uint); // El peso del elemento es p(x)=x=random_uint
+            sesgado_sqrt_probabilities[tree_size]=P_sqrt; // Agregar peso al arreglo que contiene los pesos de cada elemento insertado
+
+            // Experimento Sesgado con p(x)=ln(x)
+            sesgado_ln_insertions[tree_size] = random_uint;
+            sesgado_ln_values_for_operations[operations_index] = random_uint;
+            P_ln+=log(random_uint); // El peso del elemento es p(x)=x=random_uint
+            sesgado_ln_probabilities[tree_size]=P_ln; // Agregar peso al arreglo que contiene los pesos de cada elemento insertado
             
             // Avanzar un paso los iteradores y actualizar los k
             tree_size++; // se aumenta en uno la cantidad de elementos que tendrá el árbol
@@ -170,6 +194,21 @@ void generate_random_values(unsigned int** cache) {
             random_uint = creciente05_insertions[indice_random]; // acceder a la lista de valores que se insertarán y obtener el valor en ese indice
             creciente05_values_for_operations[operations_index] = random_uint; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores generados para las distintas operaciones
             
+            // Experimento Sesgado con p(x)=x
+            peso_random = P_x*(indice_random/tree_size);
+            random_uint = sesgado_x_insertions[nearest_value(sesgado_x_probabilities,peso_random,tree_size)];
+            sesgado_x_values_for_operations[operations_index] = random_uint;
+
+            // Experimento Sesgado con p(x)=sqrt(x)
+            peso_random = (P_sqrt/tree_size)*indice_random;
+            random_uint = sesgado_sqrt_insertions[nearest_value(sesgado_sqrt_probabilities,peso_random,tree_size)];
+            sesgado_sqrt_values_for_operations[operations_index] = random_uint;
+
+            // Experimento Sesgado con p(x)=ln(x)
+            peso_random = (P_ln/tree_size)*indice_random;
+            random_uint = sesgado_ln_insertions[nearest_value(sesgado_ln_probabilities,peso_random,tree_size)];
+            sesgado_ln_values_for_operations[operations_index] = random_uint;
+
             // Avanzar un paso el iterador
             operations_index++;
         }
@@ -184,6 +223,15 @@ void generate_random_values(unsigned int** cache) {
             // Experimento Creciente05 k=0.5*m
             creciente05_values_for_operations[operations_index] = random_uint; // añadirlo a un arreglo para facilitar el acceso (tiempo constante) a los valores generados para las distintas operaciones
             
+            // Experimento Sesgado con p(x)=x
+            sesgado_x_values_for_operations[operations_index] = random_uint;
+
+            // Experimento Sesgado con p(x)=sqrt(x)
+            sesgado_sqrt_values_for_operations[operations_index] = random_uint;
+
+            // Experimento Sesgado con p(x)=ln(x)
+            sesgado_ln_values_for_operations[operations_index] = random_uint;
+
             // Avanzar un paso el iterador
             operations_index++;
         }
@@ -193,6 +241,7 @@ void generate_random_values(unsigned int** cache) {
     printf("El tiempo de precomputo para los experimentos fue: %lf\n", elapsed_cpu_time);
     //AVL_preorder(&setup_tree);
 
+    // Liberar memoria para los arreglos utilizados
     free(aleatorio_insertions);
     free(creciente01_insertions);
     free(creciente05_insertions);
@@ -203,6 +252,7 @@ void generate_random_values(unsigned int** cache) {
     free(sesgado_sqrt_probabilities);
     free(sesgado_ln_probabilities);
 
+    // Guardar los valores generados para las operaciones de los distintos experimentos
     cache[0] = aleatorio_values_for_operations;
     cache[1] = creciente01_values_for_operations;
     cache[2] = creciente05_values_for_operations;
@@ -239,7 +289,6 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     printf("Realizando el experimento sobre el ABB...\n");
     start_time = get_cpu_time();
     for(int i=0; i<operations_size;i++) { // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
-
         // Chequear si la cantidad de operaciones hechas es un múltiplo de interval para detener el reloj y guardar los tiempos
         if(i>0 && i%interval==0) { // Se hicieron 1000 operaciones
             end_time = get_cpu_time();
@@ -289,7 +338,6 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     printf("Realizando el experimento sobre el AVL...\n");
     start_time = get_cpu_time();
     for(int i=0; i<operations_size;i++) { // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
-
         // Chequear si la cantidad de operaciones hechas es un múltiplo de interval para detener el reloj y guardar los tiempos
         if(i>0 && i%interval==0) { // Se hicieron 1000 operaciones
             end_time = get_cpu_time();
@@ -339,7 +387,6 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     printf("Realizando el experimento sobre el BTree16...\n");
     start_time = get_cpu_time();
     for(int i=0; i<operations_size;i++) { // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
-
         // Chequear si la cantidad de operaciones hechas es un múltiplo de interval para detener el reloj y guardar los tiempos
         if(i>0 && i%interval==0) { // Se hicieron 1000 operaciones
             end_time = get_cpu_time();
@@ -352,22 +399,14 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
         if (operations[i]<=3){
             // la operación es un pi (Inserción)
             BTree16_insert(&random_BTree16, value);
-            // DEBUG verificar que efectivamente se hizo la inserción
-            Btree16Node* tBTree16Node = BTree16_find(&random_BTree16, value);
-            //if(tBTree16Node!=NULL && tBTree16Node->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //inserciones++;
         }
         else if (operations[i]<= 5){
             // la operación es un pbe (Búsqueda exitosa)
-            Btree16Node* tBTree16Node = BTree16_find(&random_BTree16, value);
-            //if(tBTree16Node!=NULL && tBTree16Node->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //busquedas_exitosas++;
+            BTree16_find(&random_BTree16, value);
         }
         else{
             // la operación es un pbi (Búsqueda infructuosa)
-            Btree16Node* tBTree16Node = BTree16_find(&random_BTree16, value);
-            //if(tBTree16Node==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //busquedas_infructuosas++;
+            BTree16_find(&random_BTree16, value);
         }
     }
     end_time = get_cpu_time();
@@ -389,7 +428,6 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     printf("Realizando el experimento sobre el BTree256...\n");
     start_time = get_cpu_time();
     for(int i=0; i<operations_size;i++) { // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
-
         // Chequear si la cantidad de operaciones hechas es un múltiplo de interval para detener el reloj y guardar los tiempos
         if(i>0 && i%interval==0) { // Se hicieron 1000 operaciones
             end_time = get_cpu_time();
@@ -402,22 +440,14 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
         if (operations[i]<=3){
             // la operación es un pi (Inserción)
             BTree256_insert(&random_BTree256, value);
-            // DEBUG verificar que efectivamente se hizo la inserción
-            Btree256Node* tBTree256Node = BTree256_find(&random_BTree256, value);
-            //if(tBTree256Node!=NULL && tBTree256Node->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //inserciones++;
         }
         else if (operations[i]<= 5){
             // la operación es un pbe (Búsqueda exitosa)
-            Btree256Node* tBTree256Node = BTree256_find(&random_BTree256, value);
-            //if(tBTree256Node!=NULL && tBTree256Node->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //busquedas_exitosas++;
+            BTree256_find(&random_BTree256, value);
         }
         else{
             // la operación es un pbi (Búsqueda infructuosa)
-            Btree256Node* tBTree256Node = BTree256_find(&random_BTree256, value);
-            //if(tBTree256Node==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //busquedas_infructuosas++;
+            BTree256_find(&random_BTree256, value);
         }
     }
     end_time = get_cpu_time();
@@ -439,7 +469,6 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     printf("Realizando el experimento sobre el BTree4096...\n");
     start_time = get_cpu_time();
     for(int i=0; i<operations_size;i++) { // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
-
         // Chequear si la cantidad de operaciones hechas es un múltiplo de interval para detener el reloj y guardar los tiempos
         if(i>0 && i%interval==0) { // Se hicieron 1000 operaciones
             end_time = get_cpu_time();
@@ -452,22 +481,14 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
         if (operations[i]<=3){
             // la operación es un pi (Inserción)
             BTree4096_insert(&random_BTree4096, value);
-            // DEBUG verificar que efectivamente se hizo la inserción
-            Btree4096Node* tBTree4096Node = BTree4096_find(&random_BTree4096, value);
-            //if(tBTree4096Node!=NULL && tBTree4096Node->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //inserciones++;
         }
         else if (operations[i]<= 5){
             // la operación es un pbe (Búsqueda exitosa)
-            Btree4096Node* tBTree4096Node = BTree4096_find(&random_BTree4096, value);
-            //if(tBTree4096Node!=NULL && tBTree4096Node->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //busquedas_exitosas++;
+            BTree4096_find(&random_BTree4096, value);
         }
         else{
             // la operación es un pbi (Búsqueda infructuosa)
-            Btree4096Node* tBTree4096Node = BTree4096_find(&random_BTree4096, value);
-            //if(tBTree4096Node==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
-                //busquedas_infructuosas++;
+            BTree4096_find(&random_BTree4096, value);
         }
     }
     end_time = get_cpu_time();
@@ -489,7 +510,6 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     printf("Realizando el experimento sobre el splayTree...\n");
     start_time = get_cpu_time();
     for(int i=0; i<operations_size;i++) { // iterar sobre las operaciones para realizarlas realmente y medir el tiempo
-
         // Chequear si la cantidad de operaciones hechas es un múltiplo de interval para detener el reloj y guardar los tiempos
         if(i>0 && i%interval==0) { // Se hicieron 1000 operaciones
             end_time = get_cpu_time();
@@ -568,7 +588,6 @@ int main(){
     FILE* expCreciente05BTree256 = fopen("Results/expCreciente05BTree256.txt", "w"); 
     FILE* expCreciente05BTree4096 = fopen("Results/expCreciente05Btree4096.txt", "w"); 
     FILE* expCreciente05SplayTree = fopen("Results/expCreciente05SplayTree.txt", "w");
-    /*
     //------------------------------------------------------Sesgado con p(x)=x---------------------------------------------------------------------
     FILE* expSesgado_x_ABB = fopen("Results/expSesgado_x_ABB.txt", "w"); 
     FILE* expSesgado_x_AVL = fopen("Results/expSesgado_x_AVL.txt", "w"); 
@@ -590,17 +609,17 @@ int main(){
     FILE* expSesgado_ln_BTree256 = fopen("Results/expSesgado_ln_BTree256.txt", "w"); 
     FILE* expSesgado_ln_BTree4096 = fopen("Results/expSesgado_ln_Btree4096.txt", "w"); 
     FILE* expSesgado_ln_SplayTree = fopen("Results/expSesgado_ln_SplayTree.txt", "w");
-    */
+    
     // Correr experimentos
     //------------------------------------------------------------Aleatorio-----------------------------------------------------------------------
-    run_experiments(experiments_times,experiment_values[0]); 
+    printf("Corriendo el experimento Aleatorio...\n");
+    run_experiments(experiments_times, experiment_values[0]); 
     ABB_times = experiments_times[0];
     AVL_times = experiments_times[1];
     BTree16_times = experiments_times[2];
     BTree256_times = experiments_times[3];
     BTree4096_times = experiments_times[4];
     splayTree_times = experiments_times[5];
-    printf("Corriendo el experimento Aleatorio...\n");
     // Escribir tiempos en los archivos de cada estructura de datos
     //---------------------------------------------------------------ABB------------------------------------------------------------------------------
     for(int i=0;i<samples;i++){
@@ -632,66 +651,295 @@ int main(){
         fprintf(expAleatorioSplayTree,"%f", splayTree_times[i]);
         fprintf(expAleatorioSplayTree,"%s","\n");
     }
-    // Liberar memoria de los tiempos almacenados
-    for(int i=0;i<num_structures;i++){
-        free(experiments_times[i]);
-    }
-    printf("Tiempos del experimento Aleatorio guardados\n");
-
-    //------------------------------------------------------------Creciente01-----------------------------------------------------------------------
-    run_experiments(experiments_times,experiment_values[1]); 
-    ABB_times = experiments_times[0];
-    AVL_times = experiments_times[1];
-    BTree16_times = experiments_times[2];
-    BTree256_times = experiments_times[3];
-    BTree4096_times = experiments_times[4];
-    splayTree_times = experiments_times[5];
-    printf("Corriendo el experimento Aleatorio...\n");
-    // Escribir tiempos en los archivos de cada estructura de datos
-    //---------------------------------------------------------------ABB------------------------------------------------------------------------------
-    for(int i=0;i<samples;i++){
-        fprintf(expAleatorioABB,"%f", ABB_times[i]);
-        fprintf(expAleatorioABB,"%s","\n");  
-    }
-    //---------------------------------------------------------------AVL------------------------------------------------------------------------------
-    for(int i=0;i<samples;i++){
-        fprintf(expAleatorioAVL,"%f", AVL_times[i]);
-        fprintf(expAleatorioAVL,"%s","\n");
-    }
-    //-------------------------------------------------------------BTree16------------------------------------------------------------------------------
-    for(int i=0;i<samples;i++){
-        fprintf(expAleatorioBTree16,"%f", BTree16_times[i]);
-        fprintf(expAleatorioBTree16,"%s","\n");
-    }
-    //-------------------------------------------------------------BTree256------------------------------------------------------------------------------
-    for(int i=0;i<samples;i++){
-        fprintf(expAleatorioBTree256,"%f", BTree256_times[i]);
-        fprintf(expAleatorioBTree256,"%s","\n");
-    }
-    //-------------------------------------------------------------BTree4096------------------------------------------------------------------------------
-    for(int i=0;i<samples;i++){
-        fprintf(expAleatorioBTree4096,"%f", BTree4096_times[i]);
-        fprintf(expAleatorioBTree4096,"%s","\n");
-    }
-    //-------------------------------------------------------------SplayTree------------------------------------------------------------------------------
-    for(int i=0;i<samples;i++){
-        fprintf(expAleatorioSplayTree,"%f", splayTree_times[i]);
-        fprintf(expAleatorioSplayTree,"%s","\n");
-    }
-    // Liberar memoria de los tiempos almacenados
-    for(int i=0;i<num_structures;i++){
-        free(experiments_times[i]);
-    }
-    printf("Tiempos del experimento Aleatorio guardados\n");
-
-    for(int i=0;i<num_structures;i++){
-        free(experiment_values[i]);
-    }
+    // Cerrar los archivos de cada estructura de datos
     fclose(expAleatorioABB);
     fclose(expAleatorioAVL);
     fclose(expAleatorioBTree16);
     fclose(expAleatorioBTree256);
     fclose(expAleatorioBTree4096);
     fclose(expAleatorioSplayTree);
-   return 0;
+    printf("Tiempos del experimento Aleatorio guardados\n");
+
+    // Liberar memoria de los tiempos almacenados
+    for(int i=0;i<num_structures;i++){
+        free(experiments_times[i]);
+    }
+
+    //------------------------------------------------------Creciente con factor=0.1----------------------------------------------------------------
+    printf("Corriendo el experimento Creciente con factor=0.1...\n");
+    run_experiments(experiments_times, experiment_values[1]); 
+    ABB_times = experiments_times[0];
+    AVL_times = experiments_times[1];
+    BTree16_times = experiments_times[2];
+    BTree256_times = experiments_times[3];
+    BTree4096_times = experiments_times[4];
+    splayTree_times = experiments_times[5];
+    // Escribir tiempos en los archivos de cada estructura de datos
+    //---------------------------------------------------------------ABB------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente01ABB,"%f", ABB_times[i]);
+        fprintf(expCreciente01ABB,"%s","\n");  
+    }
+    //---------------------------------------------------------------AVL------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente01AVL,"%f", AVL_times[i]);
+        fprintf(expCreciente01AVL,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree16------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente01BTree16,"%f", BTree16_times[i]);
+        fprintf(expCreciente01BTree16,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree256------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente01BTree256,"%f", BTree256_times[i]);
+        fprintf(expCreciente01BTree256,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree4096------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente01BTree4096,"%f", BTree4096_times[i]);
+        fprintf(expCreciente01BTree4096,"%s","\n");
+    }
+    //-------------------------------------------------------------SplayTree------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente01SplayTree,"%f", splayTree_times[i]);
+        fprintf(expCreciente01SplayTree,"%s","\n");
+    }
+    // Cerrar los archivos de cada estructura de datos
+    fclose(expCreciente01ABB);
+    fclose(expCreciente01AVL);
+    fclose(expCreciente01BTree16);
+    fclose(expCreciente01BTree256);
+    fclose(expCreciente01BTree4096);
+    fclose(expCreciente01SplayTree);
+    printf("Tiempos del experimento Creciente con factor=0.1 guardados\n");
+    
+    // Liberar memoria de los tiempos almacenados
+    for(int i=0;i<num_structures;i++){
+        free(experiments_times[i]);
+    }
+
+
+    //------------------------------------------------------Creciente con factor=0.5----------------------------------------------------------------
+    printf("Corriendo el experimento Creciente con factor=0.5...\n");
+    run_experiments(experiments_times, experiment_values[2]); 
+    ABB_times = experiments_times[0];
+    AVL_times = experiments_times[1];
+    BTree16_times = experiments_times[2];
+    BTree256_times = experiments_times[3];
+    BTree4096_times = experiments_times[4];
+    splayTree_times = experiments_times[5];
+    // Escribir tiempos en los archivos de cada estructura de datos
+    //---------------------------------------------------------------ABB------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente05ABB,"%f", ABB_times[i]);
+        fprintf(expCreciente05ABB,"%s","\n");  
+    }
+    //---------------------------------------------------------------AVL------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente05AVL,"%f", AVL_times[i]);
+        fprintf(expCreciente05AVL,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree16------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente05BTree16,"%f", BTree16_times[i]);
+        fprintf(expCreciente05BTree16,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree256------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente05BTree256,"%f", BTree256_times[i]);
+        fprintf(expCreciente05BTree256,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree4096------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente05BTree4096,"%f", BTree4096_times[i]);
+        fprintf(expCreciente05BTree4096,"%s","\n");
+    }
+    //-------------------------------------------------------------SplayTree------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expCreciente05SplayTree,"%f", splayTree_times[i]);
+        fprintf(expCreciente05SplayTree,"%s","\n");
+    }
+    // Cerrar los archivos de cada estructura de datos
+    fclose(expCreciente05ABB);
+    fclose(expCreciente05AVL);
+    fclose(expCreciente05BTree16);
+    fclose(expCreciente05BTree256);
+    fclose(expCreciente05BTree4096);
+    fclose(expCreciente05SplayTree);
+    printf("Tiempos del experimento Creciente con factor=0.5 guardados\n");
+    
+    // Liberar memoria de los tiempos almacenados
+    for(int i=0;i<num_structures;i++){
+        free(experiments_times[i]);
+    }
+
+    //------------------------------------------------------Sesgado con p(x)=x---------------------------------------------------------------------
+    printf("Corriendo el experimento Sesgado con p(x)=x...\n");
+    run_experiments(experiments_times, experiment_values[3]); 
+    ABB_times = experiments_times[0];
+    AVL_times = experiments_times[1];
+    BTree16_times = experiments_times[2];
+    BTree256_times = experiments_times[3];
+    BTree4096_times = experiments_times[4];
+    splayTree_times = experiments_times[5];
+    // Escribir tiempos en los archivos de cada estructura de datos
+    //---------------------------------------------------------------ABB------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_x_ABB,"%f", ABB_times[i]);
+        fprintf(expSesgado_x_ABB,"%s","\n");  
+    }
+    //---------------------------------------------------------------AVL------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_x_AVL,"%f", AVL_times[i]);
+        fprintf(expSesgado_x_AVL,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree16------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_x_BTree16,"%f", BTree16_times[i]);
+        fprintf(expSesgado_x_BTree16,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree256------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_x_BTree256,"%f", BTree256_times[i]);
+        fprintf(expSesgado_x_BTree256,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree4096------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_x_BTree4096,"%f", BTree4096_times[i]);
+        fprintf(expSesgado_x_BTree4096,"%s","\n");
+    }
+    //-------------------------------------------------------------SplayTree------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_x_SplayTree,"%f", splayTree_times[i]);
+        fprintf(expSesgado_x_SplayTree,"%s","\n");
+    }
+    // Cerrar los archivos de cada estructura de datos
+    fclose(expSesgado_x_ABB);
+    fclose(expSesgado_x_AVL);
+    fclose(expSesgado_x_BTree16);
+    fclose(expSesgado_x_BTree256);
+    fclose(expSesgado_x_BTree4096);
+    fclose(expSesgado_x_SplayTree);
+    printf("Tiempos del experimento Sesgado con p(x)=x guardados\n");
+    
+    // Liberar memoria de los tiempos almacenados
+    for(int i=0;i<num_structures;i++){
+        free(experiments_times[i]);
+    }
+
+    //------------------------------------------------------Sesgado con p(x)=sqrt(x)---------------------------------------------------------------------
+    printf("Corriendo el experimento Sesgado con p(x)=sqrt(x)...\n");
+    run_experiments(experiments_times, experiment_values[4]); 
+    ABB_times = experiments_times[0];
+    AVL_times = experiments_times[1];
+    BTree16_times = experiments_times[2];
+    BTree256_times = experiments_times[3];
+    BTree4096_times = experiments_times[4];
+    splayTree_times = experiments_times[5];
+    // Escribir tiempos en los archivos de cada estructura de datos
+    //---------------------------------------------------------------ABB------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_sqrt_ABB,"%f", ABB_times[i]);
+        fprintf(expSesgado_sqrt_ABB,"%s","\n");  
+    }
+    //---------------------------------------------------------------AVL------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_sqrt_AVL,"%f", AVL_times[i]);
+        fprintf(expSesgado_sqrt_AVL,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree16------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_sqrt_BTree16,"%f", BTree16_times[i]);
+        fprintf(expSesgado_sqrt_BTree16,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree256------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_sqrt_BTree256,"%f", BTree256_times[i]);
+        fprintf(expSesgado_sqrt_BTree256,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree4096------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_sqrt_BTree4096,"%f", BTree4096_times[i]);
+        fprintf(expSesgado_sqrt_BTree4096,"%s","\n");
+    }
+    //-------------------------------------------------------------SplayTree------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_sqrt_SplayTree,"%f", splayTree_times[i]);
+        fprintf(expSesgado_sqrt_SplayTree,"%s","\n");
+    }
+    // Cerrar los archivos de cada estructura de datos
+    fclose(expSesgado_sqrt_ABB);
+    fclose(expSesgado_sqrt_AVL);
+    fclose(expSesgado_sqrt_BTree16);
+    fclose(expSesgado_sqrt_BTree256);
+    fclose(expSesgado_sqrt_BTree4096);
+    fclose(expSesgado_sqrt_SplayTree);
+    printf("Tiempos del experimento Sesgado con p(x)=sqrt(x) guardados\n");
+    
+    // Liberar memoria de los tiempos almacenados
+    for(int i=0;i<num_structures;i++){
+        free(experiments_times[i]);
+    }
+
+    //------------------------------------------------------Sesgado con p(x)=ln(x)---------------------------------------------------------------------
+    printf("Corriendo el experimento Sesgado con p(x)=ln(x)...\n");
+    run_experiments(experiments_times, experiment_values[5]); 
+    ABB_times = experiments_times[0];
+    AVL_times = experiments_times[1];
+    BTree16_times = experiments_times[2];
+    BTree256_times = experiments_times[3];
+    BTree4096_times = experiments_times[4];
+    splayTree_times = experiments_times[5];
+    // Escribir tiempos en los archivos de cada estructura de datos
+    //---------------------------------------------------------------ABB------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_ln_ABB,"%f", ABB_times[i]);
+        fprintf(expSesgado_ln_ABB,"%s","\n");  
+    }
+    //---------------------------------------------------------------AVL------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_ln_AVL,"%f", AVL_times[i]);
+        fprintf(expSesgado_ln_AVL,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree16------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_ln_BTree16,"%f", BTree16_times[i]);
+        fprintf(expSesgado_ln_BTree16,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree256------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_ln_BTree256,"%f", BTree256_times[i]);
+        fprintf(expSesgado_ln_BTree256,"%s","\n");
+    }
+    //-------------------------------------------------------------BTree4096------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_ln_BTree4096,"%f", BTree4096_times[i]);
+        fprintf(expSesgado_ln_BTree4096,"%s","\n");
+    }
+    //-------------------------------------------------------------SplayTree------------------------------------------------------------------------------
+    for(int i=0;i<samples;i++){
+        fprintf(expSesgado_ln_SplayTree,"%f", splayTree_times[i]);
+        fprintf(expSesgado_ln_SplayTree,"%s","\n");
+    }
+    // Cerrar los archivos de cada estructura de datos
+    fclose(expSesgado_ln_ABB);
+    fclose(expSesgado_ln_AVL);
+    fclose(expSesgado_ln_BTree16);
+    fclose(expSesgado_ln_BTree256);
+    fclose(expSesgado_ln_BTree4096);
+    fclose(expSesgado_ln_SplayTree);
+    printf("Tiempos del experimento Sesgado con p(x)=ln(x) guardados\n");
+    
+    // Liberar memoria de los tiempos almacenados
+    for(int i=0;i<num_structures;i++){
+        free(experiments_times[i]);
+    }
+    
+    // Liberar memoria de la matriz con los distintos valores para los experimentos de cada estructura
+    for(int i=0;i<num_structures;i++){
+        free(experiment_values[i]);
+    }
+    
+    return 0;
 }

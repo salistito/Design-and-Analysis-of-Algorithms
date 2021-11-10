@@ -44,10 +44,12 @@ void BTree16_split(Btree16Node** pnode, Btree16Node** root){
             node->child[i+1] = NULL;
         }
     }
-    //printf("Nodo derecho sin problemas\n");
+    printf("Nodo derecho sin problemas\n");
     int first = 1;
+    printf("%d\n",node->parent);
     //si estoy en la raiz tengo que crear un nuevo nodo raiz
     if(node->parent == NULL){
+        printf("Entro al if\n");
         Btree16Node* new_root = createBTree16Node(median);
         new_root->child[0] = node;
         new_root->child[1] = new_node;
@@ -56,10 +58,11 @@ void BTree16_split(Btree16Node** pnode, Btree16Node** root){
         *root = new_root;
     }
     //sino meto las cosas en el padre
-
     else{
+        printf("Entro al else\n");
         Btree16Node* parent = node->parent;
-        //printf("Parent count = %d", parent->count );
+        printf("ya se preguntó por el parent");
+        //printf("Parent count = %d", parent->count);
         //printf("Parent key = %d", parent->keys[0] );
         //Btree16Node* grandparent = parent->parent;
         for(int i=0; i< parent->count;i++){
@@ -91,7 +94,7 @@ void BTree16_split(Btree16Node** pnode, Btree16Node** root){
 }
 
 void BTree16Insert(Btree16Node** pnode, int x, Btree16Node** root){
-    //printf("VOY A INSERTAR %d \n", x);
+    printf("VOY A INSERTAR %d \n", x);
     Btree16Node* node = *pnode;
     if(node == NULL){
         *pnode = createBTree16Node(x);
@@ -117,9 +120,9 @@ void BTree16Insert(Btree16Node** pnode, int x, Btree16Node** root){
     node->keys[node->count] = x; 
     node->count++;
     if(node->count == B16){
-        //printf("VOY A split \n");
+        printf("VOY A split \n");
         BTree16_split(&node, root);}
-    //printf("SIN ERROR\n");
+    printf("SIN ERROR\n");
     return;
  }
 
