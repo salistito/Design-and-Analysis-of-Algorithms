@@ -5,12 +5,12 @@
 #include <string.h>
 #include "ABB.c"
 #include "AVL.c"
-//#include "Btree16.c"
-//#include "Btree256.c"
-//#include "Btree4096.c"
-#include "Btree1.c"
-#include "Btree2.c"
-#include "Btree3.c"
+#include "Btree16.c"
+#include "Btree256.c"
+#include "Btree4096.c"
+//#include "Btree1.c"
+//#include "Btree2.c"
+//#include "Btree3.c"
 #include "splayTree.c"
 
 
@@ -301,22 +301,27 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
         if (operations[i]<=3){
             // la operación es un pi (Inserción)
             ABB_insert(&random_ABB, value);
-            // DEBUG verificar que efectivamente se hizo la inserción
-            ABBNode* tABBNode = ABB_find(&random_ABB, value);
+            /*
+            ABBNode* tABBNode = ABB_find(&random_ABB, value); // DEBUG verificar que efectivamente se hizo la inserción
             if(tABBNode!=NULL && tABBNode->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 inserciones++;
+            */
         }
         else if (operations[i]<= 5){
             // la operación es un pbe (Búsqueda exitosa)
             ABBNode* tABBNode = ABB_find(&random_ABB, value);
+            /*
             if(tABBNode!=NULL && tABBNode->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 busquedas_exitosas++;
+            */
         }
         else{
             // la operación es un pbi (Búsqueda infructuosa)
             ABBNode* tABBNode = ABB_find(&random_ABB, value);
+            /*
             if(tABBNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 busquedas_infructuosas++;
+            */
         }
     }
     end_time = get_cpu_time();
@@ -324,10 +329,12 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     ABB_times[time_index] = elapsed_cpu_time;
     experiments_times[0] = ABB_times; // guardar los tiempos del experimento para el ABB
 
-    //ABB_preorder(&random_ABB);
+    /*
+    ABB_preorder(&random_ABB);
     printf("tamaño del ABB (cantidad de inserciones): %d \n", inserciones);
     printf("búsquedas exitosas: %d \n", busquedas_exitosas);
     printf("búsquedas infructuosas: %d \n", busquedas_infructuosas);
+    */
 
     time_index = 0;
     inserciones = 0;
@@ -350,22 +357,27 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
         if (operations[i]<=3){
             // la operación es un pi (Inserción)
             AVL_insert(&random_AVL, value);
-            // DEBUG verificar que efectivamente se hizo la inserción
-            AVLNode* tAVLNode = AVL_find(&random_AVL, value);
+            /*
+            AVLNode* tAVLNode = AVL_find(&random_AVL, value); // DEBUG verificar que efectivamente se hizo la inserción
             if(tAVLNode!=NULL && tAVLNode->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 inserciones++;
+            */
         }
         else if (operations[i]<= 5){
             // la operación es un pbe (Búsqueda exitosa)
             AVLNode* tAVLNode = AVL_find(&random_AVL, value);
+            /*
             if(tAVLNode!=NULL && tAVLNode->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 busquedas_exitosas++;
+            */
         }
         else{
             // la operación es un pbi (Búsqueda infructuosa)
             AVLNode* tAVLNode = AVL_find(&random_AVL, value);
+            /*
             if(tAVLNode==NULL) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 busquedas_infructuosas++;
+            */
         }
     }
     end_time = get_cpu_time();
@@ -373,10 +385,12 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     AVL_times[time_index] = elapsed_cpu_time;
     experiments_times[1] = AVL_times; // guardar los tiempos del experimento para el AVL
 
-    //AVL_preorder(&random_AVL);
+    /*
+    AVL_preorder(&random_AVL);
     printf("tamaño del AVL (cantidad de inserciones): %d \n", inserciones);
     printf("búsquedas exitosas: %d \n", busquedas_exitosas);
     printf("búsquedas infructuosas: %d \n", busquedas_infructuosas);
+    */
 
     time_index = 0;
     inserciones = 0;
@@ -414,10 +428,12 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     BTree16_times[time_index] = elapsed_cpu_time;
     experiments_times[2] = BTree16_times; // guardar los tiempos del experimento para el BTree16
 
-    //BTree16_preorder(&random_BTree16);
+    /*
+    BTree16_preorder(&random_BTree16);
     printf("tamaño del BTree16 (cantidad de inserciones): %d \n", inserciones);
     printf("búsquedas exitosas: %d \n", busquedas_exitosas);
     printf("búsquedas infructuosas: %d \n", busquedas_infructuosas);
+    */
 
     time_index = 0;
     inserciones = 0;
@@ -455,10 +471,12 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     BTree256_times[time_index] = elapsed_cpu_time;
     experiments_times[3] = BTree256_times; // guardar los tiempos del experimento para el BTree256
 
-    //BTree256_preorder(&random_BTree256);
+    /*
+    BTree256_preorder(&random_BTree256);
     printf("tamaño del BTree256 (cantidad de inserciones): %d \n", inserciones);
     printf("búsquedas exitosas: %d \n", busquedas_exitosas);
     printf("búsquedas infructuosas: %d \n", busquedas_infructuosas);
+    */
 
     time_index = 0;
     inserciones = 0;
@@ -496,10 +514,12 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     BTree4096_times[time_index] = elapsed_cpu_time;
     experiments_times[4] = BTree4096_times; // guardar los tiempos del experimento para el BTree4096
 
-    //BTree4096_preorder(&random_BTree4096);
+    /*
+    BTree4096_preorder(&random_BTree4096);
     printf("tamaño del BTree4096 (cantidad de inserciones): %d \n", inserciones);
     printf("búsquedas exitosas: %d \n", busquedas_exitosas);
     printf("búsquedas infructuosas: %d \n", busquedas_infructuosas);
+    */
 
     time_index = 0;
     inserciones = 0;
@@ -522,22 +542,27 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
         if (operations[i]<=3){
             // la operación es un pi (Inserción)
             splay_insert(&random_splayTree, value);
-            // DEBUG verificar que efectivamente se hizo la inserción
-            splayNode* tsplayNode = splay_find(&random_splayTree, value);
+            /*
+            splayNode* tsplayNode = splay_find(&random_splayTree, value); // DEBUG verificar que efectivamente se hizo la inserción
             if(tsplayNode->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 inserciones++;
+            */
         }
         else if (operations[i]<= 5){
             // la operación es un pbe (Búsqueda exitosa)
             splayNode* tsplayNode = splay_find(&random_splayTree, value);
+            /*
             if(tsplayNode->value==value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 busquedas_exitosas++;
+            */
         }
         else{
             // la operación es un pbi (Búsqueda infructuosa)
             splayNode* tsplayNode = splay_find(&random_splayTree, value);
+            /*
             if(tsplayNode->value!=value) // DEBUG -> verificar que efectivamente fue una búsqueda exitosa
                 busquedas_infructuosas++;
+            */
         }
     }
     end_time = get_cpu_time();
@@ -545,10 +570,12 @@ void run_experiments(double* experiments_times[], unsigned int experiment_values
     splayTree_times[time_index] = elapsed_cpu_time;
     experiments_times[5] = splayTree_times; // guardar los tiempos del experimento para el splayTree
 
-    //splay_preorder(&random_splayTree);
+    /*
+    splay_preorder(&random_splayTree);
     printf("tamaño del splayTree (cantidad de inserciones): %d \n", inserciones);
     printf("búsquedas exitosas: %d \n", busquedas_exitosas);
     printf("búsquedas infructuosas: %d \n", busquedas_infructuosas);
+    */
 }
 
 int main(){
@@ -601,7 +628,7 @@ int main(){
     FILE* expSesgado_sqrt_BTree16 = fopen("Results/expSesgado_sqrt_BTree16.txt", "w");
     FILE* expSesgado_sqrt_BTree256 = fopen("Results/expSesgado_sqrt_BTree256.txt", "w"); 
     FILE* expSesgado_sqrt_BTree4096 = fopen("Results/expSesgado_sqrt_Btree4096.txt", "w"); 
-    FILE* expSesgado_sqrt_SplayTree = fopen("Results/expSesgado_ln_SplayTree.txt", "w");
+    FILE* expSesgado_sqrt_SplayTree = fopen("Results/expSesgado_sqrt_SplayTree.txt", "w");
     //------------------------------------------------------Sesgado con p(x)=ln(x)-----------------------------------------------------------------
     FILE* expSesgado_ln_ABB = fopen("Results/expSesgado_ln_ABB.txt", "w"); 
     FILE* expSesgado_ln_AVL = fopen("Results/expSesgado_ln_AVL.txt", "w"); 
