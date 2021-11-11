@@ -8,9 +8,6 @@
 #include "Btree16.c"
 #include "Btree256.c"
 #include "Btree4096.c"
-//#include "Btree1.c"
-//#include "Btree2.c"
-//#include "Btree3.c"
 #include "splayTree.c"
 
 
