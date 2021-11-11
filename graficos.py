@@ -34,7 +34,7 @@ def graficar(abb, avl, b16, b256, b4096, splay, titulo, log='no'):
     for line in lines:
         AleatorioSplayTree.append(line)
 
-    x = np.arange(0,1000000,1000)
+    x = np.arange(0,1000,1)
 
     plt.clf()
     plt.plot(x,AleatorioABB,linewidth=0.5, label='ABB')
@@ -46,8 +46,8 @@ def graficar(abb, avl, b16, b256, b4096, splay, titulo, log='no'):
 
     #plt.legend([ABB,AVL,BTree16,BTree256, SplayTree], ['ABB','AVL','BTree16','BTree256', 'SplayTree'])
     plt.grid()
-    plt.xlabel('Numero de operación')
-    plt.ylabel('Tiempo promedio')
+    plt.xlabel('Intervalos de 1000 operaciones')
+    plt.ylabel('Tiempo[s]')
     plt.title(titulo)
     plt.legend(fontsize=10)
     if log =='si':
@@ -98,19 +98,19 @@ expSesgado_ln_BTree4096 = "Results/expSesgado_ln_BTree4096.txt"
 expSesgado_ln_SplayTree = "Results/expSesgado_ln_SplayTree.txt"
 
 graficar(expAleatorioABB, expAleatorioAVL, expAleatorioBTree16,
-         expAleatorioBTree256, expAleatorioBTree4096, expAleatorioSplayTree , 'Experimento Aleatorio',"si")
+         expAleatorioBTree256, expAleatorioBTree4096, expAleatorioSplayTree , 'Experimento Aleatorio')
 
 graficar(expCreciente01ABB, expCreciente01AVL, expCreciente01BTree16,
-         expCreciente01BTree256, expCreciente01BTree4096, expCreciente01SplayTree , 'Experimento Creciente con factor=0.1',"si")
+         expCreciente01BTree256, expCreciente01BTree4096, expCreciente01SplayTree , 'Experimento Creciente con factor=0.1')
 
 graficar(expCreciente05ABB, expCreciente05AVL, expCreciente05BTree16,
-         expCreciente05BTree256, expCreciente05BTree4096, expCreciente05SplayTree , 'Experimento Creciente con factor=0.5',"si")
+         expCreciente05BTree256, expCreciente05BTree4096, expCreciente05SplayTree , 'Experimento Creciente con factor=0.5')
 
 graficar(expSesgado_x_ABB, expSesgado_x_AVL, expSesgado_x_BTree16,
-         expSesgado_x_BTree256, expSesgado_x_BTree4096, expSesgado_x_SplayTree , 'Experimento Sesgado con p(x)=x',"si")
+         expSesgado_x_BTree256, expSesgado_x_BTree4096, expSesgado_x_SplayTree , 'Experimento Sesgado con p(x)=x')
 
 graficar(expSesgado_sqrt_ABB, expSesgado_sqrt_AVL, expSesgado_sqrt_BTree16,
-         expSesgado_sqrt_BTree256, expSesgado_sqrt_BTree4096, expSesgado_sqrt_SplayTree , 'Experimento Sesgado con p(x)=sqrt(x)',"si")
+         expSesgado_sqrt_BTree256, expSesgado_sqrt_BTree4096, expSesgado_sqrt_SplayTree , 'Experimento Sesgado con p(x)=sqrt(x)')
 
 graficar(expSesgado_ln_ABB, expSesgado_ln_AVL, expSesgado_ln_BTree16,
-         expSesgado_ln_BTree256, expSesgado_ln_BTree4096, expSesgado_ln_SplayTree , 'Experimento Sesgado con p(x)=ln(x)',"si")
+         expSesgado_ln_BTree256, expSesgado_ln_BTree4096, expSesgado_ln_SplayTree , 'Experimento Sesgado con p(x)=ln(x)')
