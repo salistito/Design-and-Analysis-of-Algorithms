@@ -1,0 +1,16 @@
+T = abracadabra$
+
+0 abracadabra$ -> 3
+1 bracadabra$ -> 7
+2 racadabra$ -> 11
+3 acadabra$ -> 4
+4 cadabra$ -> 8
+5 adabra$ -> 5
+6 dabra$ -> 9
+7 abra$ -> 2
+8 bra$ -> 6
+9 ra$ -> 10
+10 a$ -> 1
+11 $ -> 0
+
+SA = 11, 10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2
