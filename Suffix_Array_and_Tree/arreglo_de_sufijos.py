@@ -4,16 +4,9 @@ import sys
 archivo = open(sys.argv[1],'r')
 texto = archivo.read() 
 
-sa = sorted([texto[i:] for i in range(len(texto))])
-
 #diccionario de sufijos
 dic = {i: texto[i:] for i in range(len(texto))}
 arreglo_de_sufijos = [x for x, _ in sorted(dic.items(), key=lambda x: x[1])]
-#print(arreglo_de_sufijos)
-
-#for i in arreglo_de_sufijos:
-#    print(texto[i:])
-
 
 while True:
     cadena = input('Cadena a buscar:')
@@ -39,11 +32,19 @@ while True:
         last += 1
 
     print("Ocurrencias encontradas: ",last-first)
-    i=1
+    n=1
     for i in arreglo_de_sufijos[first:last]:
-        print(i,': ', texto[i-3:])
-        i+=1
+        atras=i 
+        while texto[atras-1] != '\n' and atras != 0:
+            atras-=1
 
+        siguiente=i
+        while siguiente != len(texto) and texto[siguiente] != '\n':
+            siguiente+=1
+        
+        print(n,': ',texto[atras:siguiente])
+        n+=1
 
 archivo.close()
+
 
