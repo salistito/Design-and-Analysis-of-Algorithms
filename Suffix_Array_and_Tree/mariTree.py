@@ -299,26 +299,28 @@ class Node:
                             if hijo.index_or_char == nueva_palabra[0]:
                                 return hijo.search(nueva_palabra, mode)
                         return self
-
+                            
+    # Búsqueda booleana      
     def searchBool(self, palabra):
-        nodo = self.search(palabra)
+        nodo = self.search2(palabra)
+        print(nodo.index_or_char)
         if type(nodo.index_or_char) == int:
             indice = nodo.index_or_char
             palabra_a_comparar = text[indice:]
             if palabra_a_comparar == palabra:
                 return True
             else:
-                #print("palabras diferentes")
+                print("palabras diferentes")
                 return False
         else:
             for hijo in nodo.children:
                 if type(hijo.index_or_char) == int:
                     indice = hijo.index_or_char
                     palabra_a_comparar = text[indice:]
-                    #print("palabra a comparar:",palabra_a_comparar)
+                    print("palabra a comparar:",palabra_a_comparar)
                     if palabra_a_comparar == palabra:
                         return True
-                    
+                
             return False
 
     # Función que printea un nodo, útil para realizar debugging
@@ -336,66 +338,11 @@ root = Node()
 root.is_root = True
 root.is_leaf = False
 root.build_trie()
-
-# caso trivial 1:
-#root.insert2(13)
-#root.insert2(5)
-#root.insert2(8)
-#root.insert2(11)
-#root.insert2(3)
-#root.insert2(1)
-
-# caso trivial 2:
-#root.insert2(12)
-#root.insert2(4)
-#root.insert2(10)
-#root.insert2(2)
-
-# Caso peluo:
-#root.insert2(7)
-#root.insert2(0)
-#root.insert2(9)
-
-# Caso caca cacho
-#root.insert(4)
-#root.insert(3)
-#root.insert(1)
-#root.insert(6)
-#root.insert(2)
-#root.insert(0)
-#root.insert(5)
-#root.insert(7)
-#root.insert(8)
-#root.insert(9)
-
-# caso arnolarnobarbolarbosarcangelarcanso:
-#root.insert(23) # angelarcanso
-#root.insert(31) # anso
-#root.insert(10) # arbolarbosarcangelarcanso
-#root.insert(15) # arbosarcangelarcanso
-#root.insert(20) # arcangelarcanso
-#root.insert(28) # arcanso
-#root.insert(5)  # arnobarbolarbosarcangelarcanso
-#root.insert(0)  # arnolarnobarbolarbosarcangelarcanso
-#root.insert(9)  # barbolarbosarcangelarcanso
-#root.insert(12)
-#root.insert(17)
-
 #root.print_PatriciaTree()
-root.get_suffix_array()
-print("El suffixArray y el de la Paty son iguales?")
-print(suffix_array==tree_suffix_array)
-error_counter = 0
-if (suffix_array==tree_suffix_array) == False:
-    for i in range(len(suffix_array)):
-        if suffix_array[i] != tree_suffix_array[i]:
-            print("debería ser:", suffix_array[i], "pero fue", tree_suffix_array[i])
-            error_counter+=1
-    print("cantidad de errores:", error_counter)
 
-# Programa que entra en un loop en el que pide al usuario una cadena a buscar
+# Programa que entra en un loop en el que pide al usuario una cadena a autocompletar
 aux_word = ""
-corte = 20
+corte = 25
 while True:
     # Almacenar la cadena ingresada por el usuario
     partial_word = input('Ingrese una cadena a buscar ("Fin para terminar la ejecución"): ' + aux_word)
